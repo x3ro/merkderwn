@@ -1,153 +1,152 @@
 package main
 
 import (
-    "bytes"
-    "regexp"
+	"bytes"
+	"regexp"
 
-    "flag"
-    "fmt"
-    "os"
-    "path/filepath"
-    "io/ioutil"
+	"flag"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 )
 
 type Converter struct {
-    inputLength int
+	inputLength int
 
-    cursor int
+	cursor int
 
-    in []rune
-    out *bytes.Buffer
+	in  []rune
+	out *bytes.Buffer
 }
 
 /* Methods that operate on the input */
 
 // Checks if the cursor has reached the end of the input
 func (c *Converter) atEof() bool {
-    return c.cursor >= c.inputLength
+	return c.cursor >= c.inputLength
 }
 
 // Returns the character at the given cursor
 func (c *Converter) at(cursor int) string {
-    return string(c.in[cursor])
+	return string(c.in[cursor])
 }
 
 // Returns the character at the cursor
 func (c *Converter) current() string {
-    return string(c.in[c.cursor])
+	return string(c.in[c.cursor])
 }
 
 // Returns the next character after the cursor
 func (c *Converter) next() string {
-    return string(c.in[c.cursor + 1])
+	return string(c.in[c.cursor+1])
 }
 
 // Returns the next |n| characters after the cursor (i.e. excluding "current()")
 func (c *Converter) lookahead(n int) string {
-    return string(c.in[c.cursor+1:c.cursor+1+n])
+	return string(c.in[c.cursor+1 : c.cursor+1+n])
 }
 
 // Same as "lookahead" with a given cursor
 func (c *Converter) lookaheadAt(n int, cursor int) string {
-    return string(c.in[cursor+1:cursor+1+n])
+	return string(c.in[cursor+1 : cursor+1+n])
 }
-
-
 
 /* Methods that operate on the output */
 
 // Writes a string to the output buffer
 func (c *Converter) emit(s string) {
-    c.out.WriteString(s)
+	c.out.WriteString(s)
 }
-
-
 
 /* Parsing \o/ */
 
 // Everything inside an HTML comment is considered to be Latex and thus emitted 1:1
 func (c *Converter) handleComments() bool {
-    if c.current() != "<" || c.lookahead(3) != "!--" {
-        return false
-    }
+	if c.current() != "<" || c.lookahead(3) != "!--" {
+		return false
+	}
 
-    for !c.atEof() && (c.current() != "-" || c.lookahead(2) != "->") {
-        c.emit(c.current())
-        c.cursor += 1
-    }
-    c.emit("-->")
-    c.cursor += 3
+	for !c.atEof() && (c.current() != "-" || c.lookahead(2) != "->") {
+		c.emit(c.current())
+		c.cursor += 1
+	}
+	c.emit("-->")
+	c.cursor += 3
 
-
-    return true
+	return true
 }
 
 // CDATA blocks are comments which are completely dropped from the output
 func (c *Converter) handleCDATA() bool {
-    if c.current() != "<" || c.lookahead(8) != "![CDATA[" {
-        return false
-    }
+	if c.current() != "<" || c.lookahead(8) != "![CDATA[" {
+		return false
+	}
 
-    for !c.atEof() && (c.current() != "]" || c.lookahead(2) != "]>") {
-        c.cursor += 1
-    }
-    c.cursor += 3 // For ]]>
+	for !c.atEof() && (c.current() != "]" || c.lookahead(2) != "]>") {
+		c.cursor += 1
+	}
+	c.cursor += 3 // For ]]>
 
-    return true
+	return true
 }
 
 func (c *Converter) handleLatex() bool {
-    if c.current() == "\\" && c.next() != "\\" {
-        if c.lookahead(5) == "begin" {
-            c.handleLatexBlock()
-        } else {
-            c.handleLatexCommand(true)
-        }
-        return true
-    }
-    return false
+	if c.current() == "\\" && c.next() != "\\" {
+		if c.lookahead(5) == "begin" {
+			c.handleLatexBlock()
+		} else {
+			c.handleLatexCommand(true)
+		}
+		return true
+	}
+	return false
 }
 
 func (c *Converter) handleLatexCommand(emitCommentBlock bool) {
-    spaceRegexp := regexp.MustCompile("\\s")
+	spaceRegexp := regexp.MustCompile("\\s")
 
-    if emitCommentBlock {
-        c.emit("<!--")
-    }
+	if emitCommentBlock {
+		c.emit("<!--")
+	}
 
-    // The command name
-    for !c.atEof() && c.current() != "{" && c.current() != "[" && !spaceRegexp.MatchString(c.current()) {
-        c.emit(c.current())
-        c.cursor += 1
-    }
+	// The command name
+	for !c.atEof() &&
+		c.current() != "{" &&
+		c.current() != "[" &&
+		!spaceRegexp.MatchString(c.current()) {
 
-    nesting := 0
-    for !c.atEof() {
-        // All parameters are closed and there is no next parameter,
-        // i.e. \foo{bar}{baz} test 123
-        //                    ^
-        if nesting == 0 && c.current() != "{" && c.current() != "[" {
-            break
-        }
+		c.emit(c.current())
+		c.cursor += 1
+	}
 
-        // This will break if there's an unbalanced number of different
-        // brace types, i.e. "[[]}" will result in nesting = 0. Don't care
-        // to fix that right now.
-        if c.current() == "{" || c.current() == "[" {
-            nesting += 1
-        }
+	nesting := 0
+	for !c.atEof() {
+		// All parameters are closed and there is no next parameter,
+		// i.e. \foo{bar}{baz} test 123
+		//                    ^
+		if nesting == 0 && c.current() != "{" && c.current() != "[" {
+			break
+		}
 
-        if c.current() == "}" || c.current() == "]" {
-            nesting -= 1
-        }
+		// This will break if there's an unbalanced number of different
+		// brace types, i.e. "[[]}" will result in nesting = 0. Don't care
+		// to fix that right now.
+		if c.current() == "{" || c.current() == "[" {
+			nesting += 1
+		}
 
-        c.emit(c.current())
-        c.cursor += 1
-    }
+		if c.current() == "}" || c.current() == "]" {
+			nesting -= 1
+		}
 
-    if emitCommentBlock {
-        c.emit("-->")
-    }
+		c.emit(c.current())
+		c.cursor += 1
+	}
+
+	if emitCommentBlock {
+		c.emit("-->")
+	}
 }
 
 // Handles (nested) \begin{} ... \end{} blocks. Does not care wether you're
@@ -156,89 +155,87 @@ func (c *Converter) handleLatexCommand(emitCommentBlock bool) {
 //      \begin{figure} ... \end{math}
 //
 func (c *Converter) handleLatexBlock() {
-    c.emit("<!--")
-    nesting := 0
+	c.emit("<!--")
+	nesting := 0
 
-    for !c.atEof() {
-        if c.current() == "\\" && c.lookahead(5) == "begin" {
-            nesting += 1
-        } else if c.current() == "\\" && c.lookahead(3) == "end" {
-            nesting -= 1
-        }
+	for !c.atEof() {
+		if c.current() == "\\" && c.lookahead(5) == "begin" {
+			nesting += 1
+		} else if c.current() == "\\" && c.lookahead(3) == "end" {
+			nesting -= 1
+		}
 
-        // If we're at the last \end, we can just parse it as a command, e.g.:
-        //
-        //      \end{figure*}
-        //      ^
-        //
-        // At that point, handleLatexCommand will consume everything including
-        // "}" and then return.
-        if nesting == 0 {
-            c.handleLatexCommand(false)
-            c.emit("-->")
-            break
-        }
+		// If we're at the last \end, we can just parse it as a command, e.g.:
+		//
+		//      \end{figure*}
+		//      ^
+		//
+		// At that point, handleLatexCommand will consume everything including
+		// "}" and then return.
+		if nesting == 0 {
+			c.handleLatexCommand(false)
+			c.emit("-->")
+			break
+		}
 
-        c.emit(c.current())
-        c.cursor += 1
-    }
+		c.emit(c.current())
+		c.cursor += 1
+	}
 }
-
 
 // Conversion loop iterating over all characters. Not very efficient, but does its job.
 func (c *Converter) Convert() []byte {
-    for !c.atEof() {
-        if c.handleComments() {
-            continue
-        }
+	for !c.atEof() {
+		if c.handleComments() {
+			continue
+		}
 
-        if c.handleCDATA() {
-            continue
-        }
+		if c.handleCDATA() {
+			continue
+		}
 
-        if c.handleLatex() {
-            continue
-        }
+		if c.handleLatex() {
+			continue
+		}
 
-        c.emit(c.current())
-        c.cursor += 1
-    }
+		c.emit(c.current())
+		c.cursor += 1
+	}
 
-    return c.out.Bytes()
+	return c.out.Bytes()
 }
-
 
 /* Utility */
 
 func ByteArrayToConverter(in []byte) Converter {
-    runes := []rune(string(in))
-    return Converter{
-        inputLength: len(runes),
-        cursor: 0,
-        in: runes,
-        out: new(bytes.Buffer),
-    }
+	runes := []rune(string(in))
+	return Converter{
+		inputLength: len(runes),
+		cursor:      0,
+		in:          runes,
+		out:         new(bytes.Buffer),
+	}
 }
 
 func SXMD(in []byte) []byte {
-    c := ByteArrayToConverter(in)
-    return c.Convert()
+	c := ByteArrayToConverter(in)
+	return c.Convert()
 }
 
 func main() {
-    flag.Parse()
-    if len(flag.Args()) != 1 {
-        fmt.Printf("Usage: %s <file-to-convert>\n", filepath.Base(os.Args[0]))
-        os.Exit(1)
-    }
+	flag.Parse()
+	if len(flag.Args()) != 1 {
+		fmt.Printf("Usage: %s <file-to-convert>\n", filepath.Base(os.Args[0]))
+		os.Exit(1)
+	}
 
-    inputFilePath := flag.Arg(0)
-    content, err := ioutil.ReadFile(inputFilePath)
-    if err != nil {
-        fmt.Printf("Could not read input file %s", inputFilePath)
-        os.Exit(1)
-    }
+	inputFilePath := flag.Arg(0)
+	content, err := ioutil.ReadFile(inputFilePath)
+	if err != nil {
+		fmt.Printf("Could not read input file %s", inputFilePath)
+		os.Exit(1)
+	}
 
-    content = SXMD(content)
-    os.Stdout.Write(content)
+	content = SXMD(content)
+	os.Stdout.Write(content)
 }
