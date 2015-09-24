@@ -242,7 +242,3 @@ func main() {
     content = SXMD(content)
     os.Stdout.Write(content)
 }
-
-
-
-
