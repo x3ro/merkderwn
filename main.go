@@ -186,7 +186,7 @@ func (c *Converter) handleLatexBlock() {
 
 
 // Conversion loop iterating over all characters. Not very efficient, but does its job.
-func (c *Converter) Convert() {
+func (c *Converter) Convert() []byte {
     for !c.atEof() {
         if c.handleComments() {
             continue
@@ -203,6 +203,8 @@ func (c *Converter) Convert() {
         c.emit(c.current())
         c.cursor += 1
     }
+
+    return c.out.Bytes()
 }
 
 
@@ -220,8 +222,7 @@ func ByteArrayToConverter(in []byte) Converter {
 
 func SXMD(in []byte) []byte {
     c := ByteArrayToConverter(in)
-    c.Convert()
-    return c.out.Bytes()
+    return c.Convert()
 }
 
 func main() {
