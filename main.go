@@ -71,7 +71,7 @@ func (c *Converter) handleComments() bool {
         return false
     }
 
-    for c.current() != "-" || c.lookahead(2) != "->" {
+    for !c.atEof() && (c.current() != "-" || c.lookahead(2) != "->") {
         c.emit(c.current())
         c.cursor += 1
     }
@@ -88,7 +88,7 @@ func (c *Converter) handleCDATA() bool {
         return false
     }
 
-    for c.current() != "]" || c.lookahead(2) != "]>" {
+    for !c.atEof() && (c.current() != "]" || c.lookahead(2) != "]>") {
         c.cursor += 1
     }
     c.cursor += 3 // For ]]>
@@ -116,7 +116,7 @@ func (c *Converter) handleLatexCommand(emitCommentBlock bool) {
     }
 
     // The command name
-    for c.current() != "{" && c.current() != "[" && !spaceRegexp.MatchString(c.current()) {
+    for !c.atEof() && c.current() != "{" && c.current() != "[" && !spaceRegexp.MatchString(c.current()) {
         c.emit(c.current())
         c.cursor += 1
     }

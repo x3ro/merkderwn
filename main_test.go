@@ -50,6 +50,26 @@ func TestExampleFiles(t *testing.T) {
     }
 }
 
+func TestEofCases(t *testing.T) {
+    c := getTestConverter("<!--foobar")
+    assert.Equal(t, "<!--foobar-->", string(c.Convert()))
+
+    c = getTestConverter("<![CDATA[foobar")
+    assert.Equal(t, "", string(c.Convert()))
+
+    c = getTestConverter("\\foo{")
+    assert.Equal(t, "<!--\\foo{-->", string(c.Convert()))
+
+    c = getTestConverter("\\foo[")
+    assert.Equal(t, "<!--\\foo[-->", string(c.Convert()))
+
+    c = getTestConverter("\\begin")
+    assert.Equal(t, "<!--\\begin", string(c.Convert()))
+
+    c = getTestConverter("\\foobar")
+    assert.Equal(t, "<!--\\foobar-->", string(c.Convert()))
+}
+
 func getTestConverter(input string) Converter {
     return ByteArrayToConverter([]byte(input))
 }
