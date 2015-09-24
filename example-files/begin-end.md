@@ -1,0 +1,10 @@
+All packets destined for the "big" Internet, such as webpages or notification tweets, are sent via HTTP and Websockets over traditional TCP/IP over Ethernet.
+
+<!--\begin{figure*}[htbp]
+    \centerline{%
+    \includegraphics[width=\textwidth]{images/network-stack}}
+    \caption{Employed network stack on both Plant Node (left) and Display Node (right). The center arrow shows the flow of a \gls{CoAP} packet from the \gls{PN} to the \gls{DN} whereas the right arrow shows the flow of a HTTP/WebSocket packet from the \gls{DN} towards the Internet.}
+    \label{fig:networkstack}
+\end{figure*}-->
+
+## Communication model [sec:communication]
