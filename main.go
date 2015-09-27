@@ -183,6 +183,32 @@ func (c *Converter) handleLatexBlock() {
 	}
 }
 
+func (c *Converter) handleInlineMath() bool {
+	// Escaped dollar sign, skip
+	if c.current() == "\\" && c.next() == "$" {
+		c.emit("$")
+		c.cursor += 2
+		return true
+	}
+
+	if c.current() != "$" {
+		return false
+	}
+
+	c.emit("<!--$")
+	c.cursor += 1
+
+	for c.current() != "$" || c.prev() == "\\"  {
+		c.emit(c.current())
+		c.cursor += 1
+	}
+
+	c.cursor += 1
+	c.emit("$-->")
+
+	return true
+}
+
 // Conversion loop iterating over all characters. Not very efficient, but does its job.
 func (c *Converter) Convert() []byte {
 	for !c.atEof() {
@@ -191,6 +217,10 @@ func (c *Converter) Convert() []byte {
 		}
 
 		if c.handleCDATA() {
+			continue
+		}
+
+		if c.handleInlineMath() {
 			continue
 		}
 
