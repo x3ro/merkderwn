@@ -84,5 +84,12 @@ func TestGeneralCursorFunctions(t *testing.T) {
 	assert.Equal(t, "Ü", c.at(9))
 	assert.Equal(t, "alsches Üben ", c.lookahead(13))
 	assert.Equal(t, "Üben von Xylophonmusik", c.lookaheadAt(22, 8))
+}
 
+func TestLookback(t *testing.T) {
+	c := getTestConverter("Falsches Üben von Xylophonmusik quält jeden größeren Zwerg")
+	c.cursor += 10
+	assert.Equal(t, " Ü", c.lookback(2))
+	assert.Equal(t, "Ü", c.prev())
+	assert.Equal(t, "Falsches Ü", c.lookback(10))
 }

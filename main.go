@@ -42,6 +42,11 @@ func (c *Converter) next() string {
 	return string(c.in[c.cursor+1])
 }
 
+// Returns the next character after the cursor
+func (c *Converter) prev() string {
+	return string(c.in[c.cursor-1])
+}
+
 // Returns the next |n| characters after the cursor (i.e. excluding "current()")
 func (c *Converter) lookahead(n int) string {
 	return string(c.in[c.cursor+1 : c.cursor+1+n])
@@ -50,6 +55,11 @@ func (c *Converter) lookahead(n int) string {
 // Same as "lookahead" with a given cursor
 func (c *Converter) lookaheadAt(n int, cursor int) string {
 	return string(c.in[cursor+1 : cursor+1+n])
+}
+
+// Returns the previous |n| characters before the cursor (i.e. excluding "current()")
+func (c *Converter) lookback(n int) string {
+	return string(c.in[c.cursor-n : c.cursor])
 }
 
 /* Methods that operate on the output */
