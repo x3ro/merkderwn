@@ -16,6 +16,8 @@ type Converter struct {
 
 	cursor int
 
+	inInlineMath bool
+
 	in  []rune
 	out *bytes.Buffer
 }
@@ -102,7 +104,7 @@ func (c *Converter) handleCDATA() bool {
 }
 
 func (c *Converter) handleLatex() bool {
-	if c.current() == "\\" && c.next() != "\\" {
+	if !c.inInlineMath && c.current() == "\\" && c.next() != "\\" {
 		if c.lookahead(5) == "begin" {
 			c.handleLatexBlock()
 		} else {
@@ -194,9 +196,8 @@ func (c *Converter) handleLatexBlock() {
 }
 
 func (c *Converter) handleInlineMath() bool {
-	// Escaped dollar sign, skip
 	if c.current() == "\\" && c.next() == "$" {
-		c.emit("$")
+		c.emit("\\$")
 		c.cursor += 2
 		return true
 	}
@@ -205,18 +206,17 @@ func (c *Converter) handleInlineMath() bool {
 		return false
 	}
 
-	c.emit("<!--$")
-	c.cursor += 1
-
-	for c.current() != "$" || c.prev() == "\\"  {
-		c.emit(c.current())
-		c.cursor += 1
+	// From http://fletcher.github.io/MultiMarkdown-4/math.html:
+	// In order to be correctly parsed as math, there must not be any space
+	// between the $ and the actual math on the inside of the delimiter, and
+	// there must be space on the outside.
+	if c.cursor > 0 && string(c.in[c.cursor-1]) == " " && !c.inInlineMath {
+		c.inInlineMath = true
+	} else if c.lookahead(1) == " " && c.inInlineMath {
+		c.inInlineMath = false
 	}
 
-	c.cursor += 1
-	c.emit("$-->")
-
-	return true
+	return false
 }
 
 // Conversion loop iterating over all characters. Not very efficient, but does its job.
