@@ -93,3 +93,22 @@ func TestLookback(t *testing.T) {
 	assert.Equal(t, "Ü", c.prev())
 	assert.Equal(t, "Falsches Ü", c.lookback(10))
 }
+
+func TestInlineMath(t *testing.T) {
+	c := getTestConverter("$5")
+	s := string(c.Convert())
+	assert.Equal(t, "$5", s)
+
+	c = getTestConverter("$\\foo")
+	s = string(c.Convert())
+	assert.Equal(t, "$<!--\\foo-->", s)
+
+	// Wrongly written $$ command, must have spaces on either side.
+	c = getTestConverter("$\\foo$")
+	s = string(c.Convert())
+	assert.Equal(t, "$<!--\\foo$-->", s)
+
+	c = getTestConverter(" $\\foo$ ")
+	s = string(c.Convert())
+	assert.Equal(t, " $\\foo$ ", s)
+}
