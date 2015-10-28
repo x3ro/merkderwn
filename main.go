@@ -212,7 +212,7 @@ func (c *Converter) handleInlineMath() bool {
 	// there must be space on the outside.
 	if c.cursor > 0 && string(c.in[c.cursor-1]) == " " && !c.inInlineMath {
 		c.inInlineMath = true
-	} else if c.lookahead(1) == " " && c.inInlineMath {
+	} else if c.inInlineMath {
 		c.inInlineMath = false
 	}
 
