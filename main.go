@@ -265,12 +265,20 @@ func SXMD(in []byte) []byte {
 func main() {
 	flag.Parse()
 	if len(flag.Args()) != 1 {
-		fmt.Printf("Usage: %s <file-to-convert>\n", filepath.Base(os.Args[0]))
+		fmt.Printf("Usage: %s <file-to-convert>\n\tSpecify '-' for standard input\n", filepath.Base(os.Args[0]))
 		os.Exit(1)
 	}
 
 	inputFilePath := flag.Arg(0)
-	content, err := ioutil.ReadFile(inputFilePath)
+
+	var content []byte
+	var err error
+	if(inputFilePath == "-") {
+		content, err = ioutil.ReadAll(os.Stdin)
+	} else {
+		content, err = ioutil.ReadFile(inputFilePath)
+	}
+
 	if err != nil {
 		fmt.Printf("Could not read input file %s", inputFilePath)
 		os.Exit(1)
