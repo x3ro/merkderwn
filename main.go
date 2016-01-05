@@ -219,6 +219,24 @@ func (c *Converter) handleInlineMath() bool {
 	return false
 }
 
+func (c *Converter) handleMerkdwernInlineMath() bool {
+	if c.current() != "•" {
+		return false
+	}
+
+	if !c.inInlineMath {
+		c.inInlineMath = true
+		c.emit("<!--$")
+	} else if c.inInlineMath {
+		c.inInlineMath = false
+		c.emit("$-->")
+	}
+
+	c.cursor += 1
+
+	return true
+}
+
 // Conversion loop iterating over all characters. Not very efficient, but does its job.
 func (c *Converter) Convert() []byte {
 	for !c.atEof() {
@@ -231,6 +249,10 @@ func (c *Converter) Convert() []byte {
 		}
 
 		if c.handleInlineMath() {
+			continue
+		}
+
+		if c.handleMerkdwernInlineMath() {
 			continue
 		}
 
