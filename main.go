@@ -241,10 +241,20 @@ func (c *Converter) handleMerkdwernInlineMath() bool {
 }
 
 func (c *Converter) handleNonBreakingSpace() bool {
-	if c.current() != "\\" && c.next() == "~" {
-		c.emit(c.current())
+	// The second clause is needed because sometimes, e.g. directly after a
+	// latex command, the case "c.next() == ~" is not hit.
+	if (c.current() != "\\" && c.next() == "~") ||
+	   (c.current() == "~" && c.prev() != "\\") {
+
+		if c.current() != "~" {
+			c.emit(c.current())
+			c.cursor += 2
+		} else {
+			c.cursor += 1
+		}
+
 		c.emit("<!--~-->")
-		c.cursor += 2
+
 		return true
 	}
 
