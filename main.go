@@ -240,6 +240,17 @@ func (c *Converter) handleMerkdwernInlineMath() bool {
 	return true
 }
 
+func (c *Converter) handleNonBreakingSpace() bool {
+	if c.current() != "\\" && c.next() == "~" {
+		c.emit(c.current())
+		c.emit("<!--~-->")
+		c.cursor += 2
+		return true
+	}
+
+	return false
+}
+
 // Conversion loop iterating over all characters. Not very efficient, but does its job.
 func (c *Converter) Convert() []byte {
 	for !c.atEof() {
@@ -256,6 +267,10 @@ func (c *Converter) Convert() []byte {
 		}
 
 		if c.handleMerkdwernInlineMath() {
+			continue
+		}
+
+		if c.handleNonBreakingSpace() {
 			continue
 		}
 

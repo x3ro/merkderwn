@@ -8,3 +8,5 @@ flow of a HTTP/WebSocket packet from the \gls{DN} towards the Internet.}-->
 * The **DELETE method** requests that the resource identified by the request <!--\gls{URI}--> be deleted <!--\cite{RFC-7252}-->.
 
 Important papers must also have important inline math, e.g. $5 \times 5$ or even $x = \frac{1}{2}$. Escaping \$-signs should also work.
+
+I<!--~-->am an additional test thingy.
