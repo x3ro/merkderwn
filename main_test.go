@@ -112,3 +112,15 @@ func TestInlineMath(t *testing.T) {
 	s = string(c.Convert())
 	assert.Equal(t, " $\\foo$ ", s)
 }
+
+func BenchmarkExampleFiles(b *testing.B) {
+    files, _ := filepath.Glob("./example-files/*.xmd")
+    for n := 0; n < b.N; n++ {
+		for _, file := range files {
+			content, err := ioutil.ReadFile(file)
+			if err == nil {
+				SXMD(content)
+			}
+		}
+	}
+}
