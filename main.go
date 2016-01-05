@@ -31,22 +31,25 @@ func (c *Converter) atEof() bool {
 
 // Returns the character at the given cursor
 func (c *Converter) at(cursor int) string {
+	if(cursor < 0 || cursor >= c.inputLength) {
+		return "\u0003"
+	}
 	return string(c.in[cursor])
 }
 
 // Returns the character at the cursor
 func (c *Converter) current() string {
-	return string(c.in[c.cursor])
+	return c.at(c.cursor)
 }
 
 // Returns the next character after the cursor
 func (c *Converter) next() string {
-	return string(c.in[c.cursor+1])
+	return c.at(c.cursor+1)
 }
 
 // Returns the next character after the cursor
 func (c *Converter) prev() string {
-	return string(c.in[c.cursor-1])
+	return c.at(c.cursor-1)
 }
 
 // Returns the next |n| characters after the cursor (i.e. excluding "current()")
