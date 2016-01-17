@@ -241,6 +241,10 @@ func (c *Converter) handleMerkdwernInlineMath() bool {
 }
 
 func (c *Converter) handleNonBreakingSpace() bool {
+	if c.inInlineMath {
+		return false
+	}
+
 	// The second clause is needed because sometimes, e.g. directly after a
 	// latex command, the case "c.next() == ~" is not hit.
 	if (c.current() != "\\" && c.next() == "~") ||
